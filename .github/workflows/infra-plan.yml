@@ -1,0 +1,43 @@
+name: Infrastructure Plan
+run-name: "Plan for `${{ inputs.environment }}` by @${{ github.actor }}"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Specifies the GitHub Environment context used for this workflow"
+        type: string
+        required: true
+
+jobs:
+  infra-plan:
+    environment: ${{ inputs.environment }}
+    env:
+      environment: ${{ inputs.environment }}
+      TF_VAR_web_app_dns_name: ${{ vars.WEB_APP_DNS_NAME }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    if: github.actor != 'dependabot[bot]' && github.actor != 'dependabot-preview[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE }}
+
+      - name: Terraform Plan ${{ inputs.environment }}
+        uses: ./.github/actions/terraform
+        with:
+          deploy: false
+          no-color: true
+          environment: ${{ inputs.environment }}
+
+      - name: PR comment terraform plan
+        if: ${{ inputs.environment == 'staging' }}
+        uses: ./.github/actions/pr-comment-tf-plan

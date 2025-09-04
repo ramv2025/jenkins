@@ -1,0 +1,57 @@
+name: "Terraform"
+description: "Deploy infrastructure to AWS using Terraform"
+inputs:
+  environment:
+    description: "Environment"
+    required: true
+  target:
+    description: Use this when you want to target an specific terraform resource
+    required: false
+    default: ""
+  deploy:
+    description: If 'true' terraform apply is executed, otherwise it isn't
+    default: "true"
+  no-color:
+    description: If 'true' outputs terraform with -no-color
+    default: "false"
+  api-ssm-prefix:
+    required: true
+    description: The SSM parameter prefix for the API
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.10"
+
+    - name: Terraform Init
+      working-directory: ./terraform
+      shell: bash
+      run: |
+        terraform init \
+        -backend-config="bucket=contractors-ui-terraform-state-${{ inputs.environment }}" \
+        -backend-config="dynamodb_table=contractors-ui-terraform-state-lock-${{ inputs.environment }}"
+
+    - name: Set Terraform workspace
+      working-directory: ./terraform
+      shell: bash
+      run: |
+        terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }}
+        echo "TF_WORKSPACE=${{ inputs.environment }}" >> $GITHUB_ENV
+
+    - name: Terraform Plan ${{ inputs.target }}
+      working-directory: ./terraform
+      shell: bash
+      run: |
+        terraform plan \
+        ${{ inputs.target != '' && format('-target="{0}"', inputs.target) || '' }} \
+        ${{ inputs.no-color == 'true' &&  '-no-color' || '' }} \
+        -out=plan.tfplan
+
+    - name: Terraform Apply
+      if: ${{ inputs.deploy == 'true' }}
+      working-directory: ./terraform
+      shell: bash
+      run: terraform apply -auto-approve plan.tfplan

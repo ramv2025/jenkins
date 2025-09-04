@@ -1,0 +1,37 @@
+name: Infrastructure Deployment
+run-name: "Deploy to `${{ inputs.environment }}` by @${{ github.actor }}"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Specifies the GitHub Environment context used for this workflow"
+        type: string
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    env:
+      environment: ${{ inputs.environment }}
+      TF_VAR_web_app_dns_name: ${{ vars.WEB_APP_DNS_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE }}
+
+      - name: Deploy
+        uses: ./.github/actions/terraform
+        with:
+          environment: ${{ inputs.environment }}

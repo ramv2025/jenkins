@@ -1,0 +1,43 @@
+name: "Terraform Plan"
+description: "Create and ensure a valid Terraform Plan exists"
+runs:
+  using: "composite"
+  steps:
+    # Note the syntax for outputting multiline strings
+    # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+    - name: Format Terraform Plan in Markdown
+      id: tf-plan-string
+      working-directory: ./terraform
+      shell: bash
+      run: |
+        TERRAFORM_PLAN=$(terraform show -no-color plan.tfplan)
+
+        EOF=$(openssl rand -hex 8)
+        echo "summary<<$EOF" >> "$GITHUB_OUTPUT"
+
+        echo '## Terraform Plan Output' >> $GITHUB_OUTPUT
+
+        echo "<details><summary>Show plan</summary>" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo '```terraform' >> $GITHUB_OUTPUT
+        echo "$TERRAFORM_PLAN" >> $GITHUB_OUTPUT
+        echo '```' >> $GITHUB_OUTPUT
+        echo "</details>" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo '*Terraform Workspace: `${{ env.TF_WORKSPACE }}`, Pusher: @${{ github.actor }}, Action: `${{ github.event_name }}`, Workflow: `${{ github.workflow }}`*' >> $GITHUB_OUTPUT
+
+        echo "$EOF" >> "$GITHUB_OUTPUT"
+
+    - name: Publish Terraform plan to PR comment
+      uses: actions/github-script@v6
+      env:
+        SUMMARY: ${{ steps.tf-plan-string.outputs.summary }}
+      with:
+        script: |
+          const commentBody = `${process.env.SUMMARY}`;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: commentBody
+          });
