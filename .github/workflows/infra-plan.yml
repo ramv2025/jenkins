@@ -2,7 +2,7 @@ name: Infrastructure Plan
 run-name: "Plan for `${{ inputs.environment }}` by @${{ github.actor }}"
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       environment:
         description: "Specifies the GitHub Environment context used for this workflow"

@@ -2,7 +2,7 @@ name: Infrastructure Deployment
 run-name: "Deploy to `${{ inputs.environment }}` by @${{ github.actor }}"
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       environment:
         description: "Specifies the GitHub Environment context used for this workflow"
@@ -20,7 +20,7 @@ jobs:
       name: ${{ inputs.environment }}
     env:
       environment: ${{ inputs.environment }}
-      TF_VAR_web_app_dns_name: ${{ vars.WEB_APP_DNS_NAME }}
+      #TF_VAR_web_app_dns_name: ${{ vars.WEB_APP_DNS_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

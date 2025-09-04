@@ -31,8 +31,8 @@ runs:
       shell: bash
       run: |
         terraform init \
-        -backend-config="bucket=contractors-ui-terraform-state-${{ inputs.environment }}" \
-        -backend-config="dynamodb_table=contractors-ui-terraform-state-lock-${{ inputs.environment }}"
+        -backend-config="bucket=jenkins-terraform-state-${{ inputs.environment }}" \
+        -backend-config="dynamodb_table=jenkins-terraform-state-lock-${{ inputs.environment }}"
 
     - name: Set Terraform workspace
       working-directory: ./terraform
