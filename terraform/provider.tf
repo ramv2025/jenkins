@@ -14,6 +14,7 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    # These can be left empty if you're using -backend-config to supply them
+    bucket = "jenkins-terraform-state-staging"
+    key    = "terraform.tfstate"
   }
 }
